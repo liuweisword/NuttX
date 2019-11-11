@@ -539,6 +539,26 @@
 #  define i2cinfo(x...)
 #endif
 
+#ifdef CONFIG_AR_FLASH_ERROR
+#  define flasherr(format, ...)    _err(format, ##__VA_ARGS__)
+#else
+#  define flasherr(x...)
+#endif
+
+#ifdef CONFIG_AR_FLASH_WARN
+#  define flashwarn(format, ...)   _warn(format, ##__VA_ARGS__)
+#else
+#  define flashwarn(x...)
+#endif
+
+#ifdef CONFIG_AR_FLASH_INFO
+#  define flashinfo(format, ...)   _info(format, ##__VA_ARGS__)
+#else
+#  define flashinfo(x...)
+#endif
+
+
+
 #ifdef CONFIG_DEBUG_I2S_ERROR
 #  define i2serr(format, ...)    _err(format, ##__VA_ARGS__)
 #else

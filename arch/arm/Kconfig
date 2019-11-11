@@ -265,6 +265,20 @@ config ARCH_CHIP_STM32F7
 	---help---
 		STMicro STM32 architectures (ARM Cortex-M7).
 
+config ARCH_CHIP_AR
+	bool "ARTOSYN AR8020"
+	select ARCH_HAVE_CMNVECTOR
+	select ARCH_CORTEXM7
+	select ARCH_HAVE_MPU
+	select ARCH_HAVE_I2CRESET
+	select ARCH_HAVE_HEAPCHECK
+	select ARCH_HAVE_SPI_BITORDER
+	select ARM_HAVE_MPU_UNIFIED
+	select ARMV7M_CMNVECTOR
+	select ARMV7M_HAVE_STACKCHECK
+	---help---
+		ARTOSYN AR8020 architectures (ARM Cortex-M7).
+
 config ARCH_CHIP_STM32L4
 	bool "STMicro STM32 L4"
 	select ARCH_HAVE_CMNVECTOR
@@ -520,6 +534,7 @@ config ARCH_CHIP
 	default "stm32"		if ARCH_CHIP_STM32
 	default "stm32f0"	if ARCH_CHIP_STM32F0
 	default "stm32f7"	if ARCH_CHIP_STM32F7
+	default "artosyn"	if ARCH_CHIP_AR
 	default "stm32l4"	if ARCH_CHIP_STM32L4
 	default "str71x"	if ARCH_CHIP_STR71X
 	default "tms570"	if ARCH_CHIP_TMS570
@@ -775,6 +790,9 @@ source arch/arm/src/stm32f0/Kconfig
 endif
 if ARCH_CHIP_STM32F7
 source arch/arm/src/stm32f7/Kconfig
+endif
+if ARCH_CHIP_AR
+source arch/arm/src/artosyn/Kconfig
 endif
 if ARCH_CHIP_STM32L4
 source arch/arm/src/stm32l4/Kconfig

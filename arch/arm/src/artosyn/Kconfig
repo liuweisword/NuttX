@@ -1,0 +1,448 @@
+#
+# For a description of the syntax of this configuration file,
+# see the file kconfig-language.txt in the NuttX tools repository.
+#
+
+if ARCH_CHIP_AR
+
+comment "ARTOSYN Configuration Options"
+
+choice
+	prompt "ARTOSYN Chip Selection"
+	default ARCH_CHIP_AR8020
+	depends on  ARCH_CHIP_AR
+
+
+config ARCH_CHIP_AR8020
+	bool "AR8020"
+	select AR_AR8020XX
+	select AR_FLASH_CONFIG_16MB
+	select AR_IO_CONFIG_A
+	---help---
+		ARTOSYN Cortex M7, 16MB FLASH
+
+
+endchoice # ARTOSYN Chip Selection
+
+config  AR_AR8020X
+	bool
+	default n
+
+config AR_IO_CONFIG_A
+	bool
+	default n
+
+config AR_AR8020XX
+	bool
+	default n
+	select AR_AR8020X
+	select ARCH_HAVE_FPU
+	select ARCH_HAVE_DPFPU
+	select ARMV7M_HAVE_ICACHE
+	select ARMV7M_HAVE_DCACHE
+	select ARMV7M_HAVE_ITCM
+	select ARMV7M_HAVE_DTCM
+
+
+config AR_FLASH_CONFIG_16MB
+	bool
+	default n
+
+
+##menu "ARTOSYN Peripheral Support"
+
+# These "hidden" settings determine is a peripheral option is available for the
+# selection MCU
+
+
+menu "AR8020 Peripheral Support"
+
+# These "hidden" settings determine is a peripheral option is available for the
+# selection MCU
+
+config AR_HAVE_SPI0
+	bool
+	default n
+
+config AR_HAVE_SPI1
+	bool
+	default n
+
+config AR_HAVE_SPI2
+	bool
+	default n
+
+config AR_HAVE_SPI3
+	bool
+	default n
+
+config AR_HAVE_SPI4
+	bool
+	default n
+
+config AR_HAVE_SPI5
+	bool
+	default n
+
+config AR_HAVE_SPI6
+	bool
+	default n
+
+config AR_HAVE_SPI7
+	bool
+	default n
+
+config AR_HAVE_SDMMC
+	bool
+	default n
+
+config AR_HAVE_ADC0
+	bool
+	default n
+
+config AR_HAVE_ADC1
+	bool
+	default n
+
+config AR_HAVE_ADC2
+	bool
+	default n
+
+config AR_HAVE_ADC3
+	bool
+	default n
+
+config AR_HAVE_ADC4
+	bool
+	default n
+
+config AR_HAVE_ADC5
+	bool
+	default n
+
+config AR_HAVE_ADC6
+	bool
+	default n
+
+config AR_HAVE_ADC7
+	bool
+	default n
+
+config AR_HAVE_ADC8
+	bool
+	default n
+
+config AR_HAVE_ADC9
+	bool
+	default n
+
+config AR_HAVE_ADC10
+	bool
+	default n
+
+config AR_HAVE_ADC11
+	bool
+	default n
+
+config AR_HAVE_ADC12
+	bool
+	default n
+
+config AR_HAVE_ADC13
+	bool
+	default n
+
+config AR_HAVE_ADC14
+	bool
+	default n
+
+config AR_HAVE_ADC15
+	bool
+	default n
+
+config AR_HAVE_CAN0
+	bool
+	default n
+
+config AR_HAVE_CAN1
+	bool
+	default n
+
+config AR_ADC
+	bool
+	default n
+
+config AR_CAN
+	bool
+	default n
+
+config AR_DMA
+	bool
+	default n
+
+config AR_I2C
+	bool
+	default n
+
+config AR_SDMMC
+	bool
+	default n
+
+config AR_SPI
+	bool
+	default n
+
+config AR_TIM
+	bool
+	default n
+
+config AR_UART
+	bool
+	default n
+
+# These are the peripheral selections proper
+
+config AR_ADC0
+	bool "ADC0"
+	default n
+	select AR_ADC
+
+config AR_ADC1
+	bool "ADC1"
+	default n
+	select AR_ADC
+
+config AR_ADC2
+	bool "ADC2"
+	default n
+	select AR_ADC
+
+config AR_ADC3
+	bool "ADC3"
+	default n
+	select AR_ADC
+
+config AR_ADC4
+	bool "ADC4"
+	default n
+	select AR_ADC
+
+config AR_BKPSRAM
+	bool "Enable BKP RAM Domain"
+	default n
+
+config AR_CAN0
+	bool "CAN0"
+	default n
+	select CAN
+	select AR_CAN
+
+config AR_CAN1
+	bool "CAN1"
+	default n
+	select CAN
+	select AR_CAN
+
+config AR_DMA0
+	bool "DMA"
+	default n
+	select AR_DMA
+	select ARCH_DMA
+
+config AR_I2C0
+	bool "I2C0"
+	default n
+	select AR_I2C
+
+config AR_I2C1
+	bool "I2C1"
+	default n
+	select AR_I2C
+
+config AR_I2C2
+	bool "I2C2"
+	default n
+	select AR_I2C
+
+config AR_I2C3
+	bool "I2C3"
+	default n
+	select AR_I2C
+
+config AR_OTGFS
+	bool "OTG FS"
+	default n
+	select USBHOST_HAVE_ASYNCH if USBHOST
+
+config AR_OTGHS
+	bool "OTG HS"
+	default n
+	select USBHOST_HAVE_ASYNCH if USBHOST
+
+config AR_SDMMC0
+	bool "SDMMC0"
+	default n
+	select AR_SDMMC
+	select ARCH_HAVE_SDIO
+	select ARCH_HAVE_SDIOWAIT_WRCOMPLETE
+	select SDIO_PREFLIGHT
+
+config AR_SPI0
+	bool "SPI0"
+	default n
+	select SPI
+	select AR_SPI
+
+config AR_SPI1
+	bool "SPI1"
+	default n
+	select SPI
+	select AR_SPI
+
+config AR_SPI2
+	bool "SPI2"
+	default n
+	select SPI
+	select AR_SPI
+
+config AR_SPI3
+	bool "SPI3"
+	default n
+	select SPI
+	select AR_SPI
+
+config AR_SPI4
+	bool "SPI4"
+	default n
+	select SPI
+	select AR_SPI
+
+config AR_SPI5
+	bool "SPI5"
+	default n
+	select SPI
+	select AR_SPI
+
+config AR_SPI6
+	bool "SPI6"
+	default n
+	select SPI
+	select AR_SPI
+
+config AR_SPI7
+        bool "SPI7"
+        default n
+        select SPI
+        select AR_SPI
+
+config AR_TIM0
+	bool "TIM0"
+	default n
+	select AR_TIM
+
+config AR_TIM1
+	bool "TIM1"
+	default n
+	select AR_TIM
+
+config AR_TIM2
+	bool "TIM2"
+	default n
+	select AR_TIM
+
+config AR_UART1
+	bool "UART1"
+	default n
+	select UART1_SERIALDRIVER
+	select ARCH_HAVE_SERIAL_TERMIOS
+	select AR_UART
+
+config AR_UART2
+	bool "UART2"
+	default n
+	select UART2_SERIALDRIVER
+	select ARCH_HAVE_SERIAL_TERMIOS
+	select AR_UART
+
+config AR_UART3
+	bool "UART3"
+	default n
+	select UART3_SERIALDRIVER
+	select ARCH_HAVE_SERIAL_TERMIOS
+	select AR_UART
+
+config AR_UART4
+	bool "UART4"
+	default n
+	select UART4_SERIALDRIVER
+	select ARCH_HAVE_SERIAL_TERMIOS
+	select AR_UART
+
+config AR_UART5
+	bool "UART5"
+	default n
+	select UART5_SERIALDRIVER
+	select ARCH_HAVE_SERIAL_TERMIOS
+	select AR_UART
+
+config AR_UART6
+	bool "UART6"
+	default n
+	select UART6_SERIALDRIVER
+	select ARCH_HAVE_SERIAL_TERMIOS
+	select AR_UART
+
+config AR_UART7
+	bool "UART7"
+	default n
+	select UART7_SERIALDRIVER
+	select ARCH_HAVE_SERIAL_TERMIOS
+	select AR_UART
+
+config AR_UART8
+	bool "UART8"
+	default n
+	select UART8_SERIALDRIVER
+	select ARCH_HAVE_SERIAL_TERMIOS
+	select AR_UART
+
+endmenu
+
+
+if AR_BKPSRAM
+
+config AR_BBSRAM
+	bool "BBSRAM File Support"
+	default n
+
+config AR_BBSRAM_FILES
+	int "Max Files to support in BBSRAM"
+	default 4
+
+config AR_SAVE_CRASHDUMP
+	bool "Enable Saving Panic to BBSRAM"
+	default n
+
+endif # AR_BKPSRAM
+
+
+
+# These "hidden" settings are the OR of individual peripheral selections
+# indicating that the general capability is required.
+
+# These are the peripheral selections proper
+
+##endmenu
+
+
+
+
+
+
+
+
+
+
+
+
+endif # ARCH_CHIP_AR

@@ -393,6 +393,10 @@ FAR struct mtd_dev_s *at24c_initialize(FAR struct i2c_master_s *dev);
 void at24c_uninitialize(FAR struct mtd_dev_s *mtd);
 #endif
 
+#ifdef CONFIG_AR_MTD_FLASH
+FAR struct mtd_dev_s *artosyn_initialize(void);
+#endif
+
 /****************************************************************************
  * Name: at25_initialize
  *

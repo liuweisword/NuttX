@@ -494,12 +494,18 @@ static inline int ramtron_readid(struct ramtron_dev_s *priv)
   SPI_SELECT(priv->dev, SPIDEV_FLASH(0), false);
   ramtron_unlock(priv->dev);
 
+
+    finfo("cap:0x%02x part:0x%02x)\n", capacity, part);
+
   /* Select part from the part list */
 
   for (priv->part = g_ramtron_parts;
        priv->part->name != NULL &&
          !(priv->part->id1 == capacity && priv->part->id2 == part);
        priv->part++);
+
+    finfo("RAMTRON %s of size %d bytes (mf:%02x mem:%02x cap:%02x part:%02x)\n",
+            priv->part->name, priv->part->size, manufacturer, memory, capacity, part);
 
   if (priv->part->name != NULL)
     {

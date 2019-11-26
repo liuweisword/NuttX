@@ -79,6 +79,7 @@
 #define AR_UART4_BASE       0x40540000      /* 0x40500000-0x4054ffff: UART4 */
 #define AR_UART5_BASE       0x40550000      /* 0x40500000-0x4055ffff: UART5 */
 #define AR_UART6_BASE       0x40560000      /* 0x40500000-0x4056ffff: UART6 */
+#define AR_UART7_BASE       0x40570000      /* 0x40570000-0x4057ffff: UART6 */
 
 #define AR_BKSRAM_BASE      0x21000000 + (60 * 1024)     /* 0x41100000-0x41100fff: 4K BACKUPRAM  */
 #define AR_BKREG_BASE       0x41200000      /* 0x41200000-0x412fffff: 80Bit backup reg  */

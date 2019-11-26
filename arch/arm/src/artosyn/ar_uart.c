@@ -155,6 +155,10 @@ static char g_uart6rxbuffer[ARCFG_UART6_RXBUFF];
 static char g_uart6txbuffer[ARCFG_UART6_TXBUFF];
 
 
+static char g_uart7rxbuffer[ARCFG_UART7_RXBUFF];
+static char g_uart7txbuffer[ARCFG_UART7_TXBUFF];
+
+
 static struct up_dev_s g_uart0priv =
 {
   .uartbase       = AR_UART0_BASE,
@@ -224,6 +228,16 @@ static struct up_dev_s g_uart6priv =
   .parity         = ARCFG_UART6_PARITY,
   .bits           = ARCFG_UART6_BITS,
   .stopbits2      = ARCFG_UART6_STOPBITS,
+};
+
+static struct up_dev_s g_uart7priv =
+{
+  .uartbase       = AR_UART7_BASE,
+  .baud           = ARCFG_UART7_BAUD,
+  .irq            = AR_IRQ_UART7,
+  .parity         = ARCFG_UART7_PARITY,
+  .bits           = ARCFG_UART7_BITS,
+  .stopbits2      = ARCFG_UART7_STOPBITS,
 };
 
 
@@ -339,38 +353,21 @@ static uart_dev_t g_uart6port =
   .priv     = &g_uart6priv,
 };
 
-// static uart_dev_t g_uart7port =
-// {
-//   .recv     =
-//   {
-//     .size   = ARCFG_UART7_RXBUFF,
-//     .buffer = g_uart7rxbuffer,
-//   },
-//   .xmit     =
-//   {
-//     .size   = ARCFG_UART7_TXBUFF,
-//     .buffer = g_uart7txbuffer,
-//   },
-//   .ops      = &g_uart_ops,
-//   .priv     = &g_uart7priv,
-// };
-
-// static uart_dev_t g_uart8port =
-// {
-//   .recv     =
-//   {
-//     .size   = ARCFG_UART8_RXBUFF,
-//     .buffer = g_uart8rxbuffer,
-//   },
-//   .xmit     =
-//   {
-//     .size   = ARCFG_UART8_TXBUFF,
-//     .buffer = g_uart8txbuffer,
-//   },
-//   .ops      = &g_uart_ops,
-//   .priv     = &g_uart8priv,
-// };
-
+static uart_dev_t g_uart7port =
+{
+  .recv     =
+  {
+    .size   = ARCFG_UART7_RXBUFF,
+    .buffer = g_uart7rxbuffer,
+  },
+  .xmit     =
+  {
+    .size   = ARCFG_UART7_TXBUFF,
+    .buffer = g_uart7txbuffer,
+  },
+  .ops      = &g_uart_ops,
+  .priv     = &g_uart7priv,
+};
 
 
 // read
@@ -1000,6 +997,10 @@ void up_serialinit(void)
 
 #ifdef TTYS6_DEV
     (void)uart_register("/dev/ttyS6", &TTYS6_DEV);
+#endif
+
+#ifdef TTYS7_DEV
+    (void)uart_register("/dev/ttyS7", &TTYS7_DEV);
 #endif
 }
 

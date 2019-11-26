@@ -630,6 +630,7 @@ static int ar_i2c_isr_process(struct ar_i2c_priv_s *priv)
     uint8_t isout = 0;
 
     priv->status = status;
+
     // /* --------------------- Start of I2C protocol handling -------------------- */
 
     if ((status & IC_INTR_R_TX_ABRT) && _abort)
@@ -680,11 +681,50 @@ static int ar_i2c_isr_process(struct ar_i2c_priv_s *priv)
             }
             break;
         }
+        case 1: 
+        {
+            // msgc = 1 代表只读的状态，例如: ms4525
+            if (priv->msgv[0].flags & I2C_M_READ) // read
+            {
+                int32_t count = 0;
+                int32_t fifolength = ar_i2c_master_getrxfifolength(priv);
+
+                // 读取所有的数据内容
+                while (count < fifolength)
+                {
+                    uint8_t data = ar_i2c_getreg32(priv, I2C_IC_DATA_CMD) & 0xFF;
+
+                    priv->i2c_int_data.rxbuf[priv->i2c_int_data.rx_alr_len++] = data;
+                    count += 1;
+                }
+
+                if (priv->i2c_int_data.rx_alr_len < priv->i2c_int_data.rx_len)
+                {
+                    ar_i2c_fifo_read_data(priv);
+                }
+                else
+                {
+
+                    ar_i2c_modifyreg32(priv, I2C_IC_INTR_MASK, IC_INTR_R_RX_FULL, 0);
+                    isout = 1;
+                }
+            }
+            else
+            {
+                i2cerr("error, should not happen");
+                isout = 1;
+            }
+            break;
+        }
+
         default:
-            i2cerr("Should not happen or not support \r\n");
+        {
+            i2cerr("Should not happen or not support,  %d\r\n", priv->msgc);
             isout = 1;
             priv->msgc = 0;
             break;
+        }
+           
         }
     }
     else if (status & (IC_INTR_R_TX_EMPTY))
@@ -708,7 +748,7 @@ static int ar_i2c_isr_process(struct ar_i2c_priv_s *priv)
     // 结束标志可能会在 TX_Empty 完成之后出现, 也可能与 RX_FULL 同时存在
     if (status & IC_INTR_R_STOP_DET) // STOP
     {
-        i2cinfo("stop \r\n");
+        // i2cinfo("stop \r\n");
         isout = 1;
     }
 
@@ -838,6 +878,59 @@ static inline void ar_i2c_sendstop(FAR struct ar_i2c_priv_s *priv)
     ar_i2c_modifyreg32(priv, I2C_IC_DATA_CMD, 0, IC_DATA_CMD_STOP);
 }
 
+
+static void ar_i2c_msg_count_1_config_read(struct ar_i2c_priv_s *priv, FAR struct i2c_msg_s *msgs)
+{
+    priv->i2c_int_data.rxbuf = msgs[0].buffer;;
+    priv->i2c_int_data.rx_alr_len = 0;
+    priv->i2c_int_data.rx_len = msgs[0].length;;
+
+    priv->i2c_int_data.txbuf = NULL;
+    priv->i2c_int_data.tx_alr_len = 0;
+    priv->i2c_int_data.tx_len = 0;
+
+    // address & frequency are fixed
+    priv->addr = msgs[0].addr;
+    priv->frequency = msgs[0].frequency;
+
+    priv->msgv = msgs;
+    priv->msgc = 1;
+
+    // 1. 设置地址
+    /* Set the (7 bit) address.-
+     * 10 bit addressing is not yet supported.
+     */
+    ar_i2c_set_7bit_address(priv);
+
+    /* 
+     * 暂时不支持频率的变换， 也不支持 slave 地址的更改
+     */
+    ar_i2c_setclock(priv, priv->frequency);
+
+    /**
+     * 设置状态为等待状态
+    */
+    priv->intstate = INTSTATE_WAITING;
+
+    ar_i2c_enable(priv);
+
+    ar_i2c_load_fifo_write_data(priv);
+
+
+
+    priv->intstate = INTSTATE_WAITING;
+
+    ar_i2c_enable(priv);
+
+    // // 读操作之前先写入地址S
+    // unsigned int data = priv->i2c_int_data.txbuf[0];
+    // i2c_write_byte(priv, data);
+
+    // 读操作
+    ar_i2c_fifo_read_data(priv);
+}
+
+
 static void ar_i2c_msg_count_1_config_write(struct ar_i2c_priv_s *priv, FAR struct i2c_msg_s *msgs)
 {
     priv->i2c_int_data.rxbuf = NULL;
@@ -959,8 +1052,8 @@ ar_i2c_process(FAR struct i2c_master_s *dev, FAR struct i2c_msg_s *msgs, int cou
             ar_i2c_msg_count_1_config_write(priv, msgs);
         }
         else
-        {
-            i2cinfo("count = 1, read should not happend ");
+        {            
+            ar_i2c_msg_count_1_config_read(priv, msgs);
         }
         break;
     }

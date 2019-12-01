@@ -914,18 +914,6 @@ static void ar_i2c_msg_count_1_config_read(struct ar_i2c_priv_s *priv, FAR struc
 
     ar_i2c_enable(priv);
 
-    ar_i2c_load_fifo_write_data(priv);
-
-
-
-    priv->intstate = INTSTATE_WAITING;
-
-    ar_i2c_enable(priv);
-
-    // // 读操作之前先写入地址S
-    // unsigned int data = priv->i2c_int_data.txbuf[0];
-    // i2c_write_byte(priv, data);
-
     // 读操作
     ar_i2c_fifo_read_data(priv);
 }

@@ -472,10 +472,10 @@ static void ar_i2c_setclock(FAR struct ar_i2c_priv_s *priv, uint32_t frequency)
 
         ar_i2c_putreg32(priv, I2C_IC_FS_SPKLEN, 1);
         // set high period of SCL 4000 * 2 ns     100MHz = 10ns   8000ns = 800cnt
-        ar_i2c_putreg32(priv, I2C_IC_SS_SCL_HCNT, 510);
+        ar_i2c_putreg32(priv, I2C_IC_SS_SCL_HCNT, 650);
 
         // set low period of SCL 4700 * 2 ns
-        ar_i2c_putreg32(priv, I2C_IC_SS_SCL_LCNT, 510);
+        ar_i2c_putreg32(priv, I2C_IC_SS_SCL_LCNT, 650);
     }
     else if (frequency == 400000) // fast speed
     {
@@ -486,10 +486,10 @@ static void ar_i2c_setclock(FAR struct ar_i2c_priv_s *priv, uint32_t frequency)
 
         ar_i2c_putreg32(priv, I2C_IC_FS_SPKLEN, 1);
         // set high period of SCL 600 * 2 ns
-        ar_i2c_putreg32(priv, I2C_IC_FS_SCL_HCNT, 130);
+        ar_i2c_putreg32(priv, I2C_IC_FS_SCL_HCNT, 160);
 
         // set low period of SCL 1300 * 2 ns
-        ar_i2c_putreg32(priv, I2C_IC_FS_SCL_LCNT, 130);
+        ar_i2c_putreg32(priv, I2C_IC_FS_SCL_LCNT, 160);
     }
     else if (frequency == 1000000) // high mode
     {
@@ -499,10 +499,10 @@ static void ar_i2c_setclock(FAR struct ar_i2c_priv_s *priv, uint32_t frequency)
 
         ar_i2c_putreg32(priv, I2C_IC_HS_SPKLEN, 1);
         // set high period of SCL 160 * 2 ns
-        ar_i2c_putreg32(priv, I2C_IC_HS_SCL_HCNT, 51);
+        ar_i2c_putreg32(priv, I2C_IC_HS_SCL_HCNT, 65);
 
         // set low period of SCL 320 * 2 ns
-        ar_i2c_putreg32(priv, I2C_IC_HS_SCL_LCNT, 51);
+        ar_i2c_putreg32(priv, I2C_IC_HS_SCL_LCNT, 65);
     }
 
     if (pe)
@@ -1159,8 +1159,8 @@ static int ar_i2c_init(FAR struct ar_i2c_priv_s *priv)
 
     ar_i2c_putreg32(priv, I2C_IC_FS_SPKLEN, 1);
 
-    ar_i2c_putreg32(priv, I2C_IC_SS_SCL_HCNT, 510);
-    ar_i2c_putreg32(priv, I2C_IC_SS_SCL_LCNT, 510);
+    ar_i2c_putreg32(priv, I2C_IC_SS_SCL_HCNT, 650);
+    ar_i2c_putreg32(priv, I2C_IC_SS_SCL_LCNT, 650);
 
     ar_i2c_putreg32(priv, I2C_IC_TAR, 0x00 & 0x7F); // set target
 

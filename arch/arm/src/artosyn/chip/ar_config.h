@@ -44,7 +44,7 @@
 #include <nuttx/config.h>
 #include "chip/ar_memorymap.h"
 
-#define CPU0_CPU1_CORE_PLL_CLK       200000000                                       /* unit: MHz */
+#define CPU0_CPU1_CORE_PLL_CLK       250000000                                       /* unit: MHz */
 #define CPU2_CORE_PLL_CLK            166000000                                       /* unit: MHz */
 
 #define AR_I2C0_3_CLK_MAX           (CPU0_CPU1_CORE_PLL_CLK/2)

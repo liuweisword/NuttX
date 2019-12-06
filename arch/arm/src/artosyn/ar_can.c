@@ -916,7 +916,7 @@ static int arcan_interrupt(int irq, FAR void *context, FAR void *arg)
       hdr.ch_rtr = (rxcontrolData & 1<<6);
       hdr.ch_dlc = (rxcontrolData & 0xf);
 
-      for (size_t i = 0; i < hdr.ch_dlc / 4; i)
+      for (size_t i = 0; i < hdr.ch_dlc / 4; i += 4)
       {
           buffer[i] = pst_canReg->u32_rxBuf[2+i];
       }

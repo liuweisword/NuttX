@@ -119,4 +119,4 @@ CHIP_CSRCS += ar_spi.c
 CHIP_CSRCS += ar_irq.c  ar_sdmmc.c
 CHIP_CSRCS += ar_i2c.c
 CHIP_CSRCS += ar_otgdev.c ar_bbsram.c
-CHIP_CSRCS += ar_flash.c ar_qspi.c
+CHIP_CSRCS += ar_flash.c ar_qspi.c ar_can.c

@@ -876,35 +876,67 @@ static bool arcan_txempty(FAR struct can_dev_s *dev)
 static int arcan_interrupt(int irq, FAR void *context, FAR void *arg)
 {
   struct can_dev_s *dev = (struct can_dev_s *)arg;
+  
+  struct can_hdr_s hdr = {0};
+
+  uint32_t buffer[4] = {0};
 
   FAR struct ar_can_s *priv = (struct ar_can_s *)(dev->cd_priv);
 
   volatile STRU_CAN_TYPE *pst_canReg = (STRU_CAN_TYPE *)priv->base;
-
-  caninfo("rtif %02x", pst_canReg->u32_reg4 & 0x8000);
 
   if ((pst_canReg->u32_reg4 & 0x8000) != 0) 
   {
       // clear Receive Irq
       pst_canReg->u32_reg4 |= 0x8000;
 
-      // get receive buffer status
-      
-      caninfo("rstat = %02x", (pst_canReg->u32_reg3) & (3 << 24));
+      uint32_t rstat = ((pst_canReg->u32_reg3) & (3 << 24)) >> 24;
+
+      if (rstat == 0) 
+      {
+        // empty
+        return ERROR;
+      }
+
+      uint32_t rxcontrolData = pst_canReg->u32_rxBuf[1];
+
+      if ((rxcontrolData & 1<<7) == 0) // std frame
+      {
+        hdr.ch_id = pst_canReg->u32_rxBuf[0] & CAN_AMASK_ID10_0;
+      }
+      else //ext frame
+      {
+#ifdef CONFIG_CAN_EXTID
+        hdr.ch_id = pst_canReg->u32_rxBuf[0] & CAN_AMASK_ID28_0;
+        hdr.ch_extid = 1;
+        canerr("ERROR: not support ext frame\n");
+#endif
+      }
+
+      hdr.ch_rtr = (rxcontrolData & 1<<6);
+      hdr.ch_dlc = (rxcontrolData & 0xf);
+
+      for (size_t i = 0; i < hdr.ch_dlc / 4; i)
+      {
+          buffer[i] = pst_canReg->u32_rxBuf[2+i];
+      }
 
       
 
-
+      can_receive(dev, &hdr, (uint8_t *)buffer[0]);
+      // release 
+      pst_canReg->u32_reg3 |= (1<<28);
 
 
   }
-
-
-
-  
-
-  caninfo("arcan_interrupt");
-
+  else if ((pst_canReg->u32_reg4 & 0x0c00) != 0) 
+  {
+    pst_canReg->u32_reg4 |=0x0c000;
+  }
+  else 
+  {
+    canerr("some error: 0x%x \n", pst_canReg->u32_reg4);
+  }
 
   return OK;
 }

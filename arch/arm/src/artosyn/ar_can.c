@@ -1318,6 +1318,7 @@ FAR struct can_dev_s *ar_caninitialize(int port)
     // ar_configgpio(GPIO_CAN1_RX);
     // ar_configgpio(GPIO_CAN1_TX);
   }
+  else
 #endif
 #ifdef CONFIG_AR_CAN1
   if (port == 1)

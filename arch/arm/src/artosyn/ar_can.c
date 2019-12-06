@@ -89,7 +89,7 @@ struct ar_can_s
   uint32_t ev_irq; /* Event IRQ */
   uint8_t  filter;   /* Filter number */
   uint32_t fbase;    /* Base address of the CAN filter registers */
-  uint32_t baud;     /* Configured baud */
+  ENUM_CAN_BAUDR baud;     /* Configured baud */
 };
 
 /****************************************************************************
@@ -177,7 +177,7 @@ static struct ar_can_s g_can0priv =
   .filter           = 0,
   .base             = AR_CAN0_BASE,
   .fbase            = AR_CAN0_BASE,
-  .baud             = 115200,
+  .baud             = CAN_BAUDR_500K,
 };
 
 static struct can_dev_s g_can0dev =
@@ -195,7 +195,7 @@ static struct ar_can_s g_can1priv =
   .filter           = 0,
   .base             = AR_CAN1_BASE,
   .fbase            = AR_CAN1_BASE,
-  .baud             = 115200,
+  .baud             = CAN_BAUDR_500K,
 };
 
 static struct can_dev_s g_can1dev =
@@ -271,7 +271,7 @@ static void arcan_reset(FAR struct can_dev_s *dev)
 {
   FAR struct ar_can_s *priv = dev->cd_priv;
 
-  caninfo("CAN%d\n", priv->port);
+  caninfo("arcan_reset CAN%d\n", priv->port);
 
   irqstate_t flags = enter_critical_section();  
 
@@ -334,7 +334,7 @@ static int arcan_setup(FAR struct can_dev_s *dev)
 
   up_enable_irq(priv->ev_irq);
 
-  return OK;
+  return ret;
 }
 
 /****************************************************************************
@@ -356,7 +356,7 @@ static void arcan_shutdown(FAR struct can_dev_s *dev)
 {
   FAR struct ar_can_s *priv = dev->cd_priv;
 
-  caninfo("CAN%d\n", priv->port);
+  caninfo("arcan_shutdown CAN%d\n", priv->port);
 
   // Disable interrupts
   up_disable_irq(priv->ev_irq);
@@ -381,24 +381,20 @@ static void arcan_shutdown(FAR struct can_dev_s *dev)
 
 static void arcan_rxint(FAR struct can_dev_s *dev, bool enable)
 {
-  FAR struct ar_can_s *priv = dev->cd_priv;
-  // uint32_t regval;
+  FAR struct ar_can_s *priv = (struct ar_can_s *)dev->cd_priv;
 
-  caninfo("CAN%d enable: %d\n", priv->port, enable);
+  volatile STRU_CAN_TYPE *pst_canReg = (STRU_CAN_TYPE *)priv->base;
 
-  /* Enable/disable the FIFO 0/1 message pending interrupt */
-// TODO
-//   regval = stm32can_getreg(priv, STM32_CAN_IER_OFFSET);
-//   if (enable)
-//     {
-//       regval |= CAN_IER_FMPIE0 | CAN_IER_FMPIE1;
-//     }
-//   else
-//     {
-//       regval &= ~(CAN_IER_FMPIE0 | CAN_IER_FMPIE1);
-//     }
-// 
-//   stm32can_putreg(priv, STM32_CAN_IER_OFFSET, regval);
+  if (enable)
+  {
+    pst_canReg->u32_reg4 |= (0xF0); // set RIE / ROIE / RFIE / RAFIE
+  }
+  else
+  {
+    pst_canReg->u32_reg4 &= ~(0xF0); // clear RIE / ROIE / RFIE / RAFIE    
+  }
+
+  caninfo("arcan_rxint CAN%d enable: 0x%02x\n", priv->port, pst_canReg->u32_reg4);
 }
 
 /****************************************************************************
@@ -420,7 +416,7 @@ static void arcan_txint(FAR struct can_dev_s *dev, bool enable)
   FAR struct ar_can_s *priv = dev->cd_priv;
   // uint32_t regval;
 
-  caninfo("CAN%d enable: %d\n", priv->port, enable);
+  caninfo("arcan_txint CAN%d enable: %d\n", priv->port, enable);
 
   /* Support only disabling the transmit mailbox interrupt */
 
@@ -753,6 +749,9 @@ static void arcan_txint(FAR struct can_dev_s *dev, bool enable)
 static int arcan_ioctl(FAR struct can_dev_s *dev, int cmd,
                           unsigned long arg)
 {
+    caninfo("arcan_ioctl can data erase \n");
+
+  
   // FAR struct ar_can_s *priv;
   int ret = -ENOTTY;
 
@@ -876,6 +875,37 @@ static bool arcan_txempty(FAR struct can_dev_s *dev)
  ****************************************************************************/
 static int arcan_interrupt(int irq, FAR void *context, FAR void *arg)
 {
+  struct can_dev_s *dev = (struct can_dev_s *)arg;
+
+  FAR struct ar_can_s *priv = (struct ar_can_s *)(dev->cd_priv);
+
+  volatile STRU_CAN_TYPE *pst_canReg = (STRU_CAN_TYPE *)priv->base;
+
+  caninfo("rtif %02x", pst_canReg->u32_reg4 & 0x8000);
+
+  if ((pst_canReg->u32_reg4 & 0x8000) != 0) 
+  {
+      // clear Receive Irq
+      pst_canReg->u32_reg4 |= 0x8000;
+
+      // get receive buffer status
+      
+      caninfo("rstat = %02x", (pst_canReg->u32_reg3) & (3 << 24));
+
+      
+
+
+
+
+  }
+
+
+
+  
+
+  caninfo("arcan_interrupt");
+
+
   return OK;
 }
 
@@ -1014,82 +1044,50 @@ static int arcan_cellinit(FAR struct ar_can_s *priv)
 
     //clear S_PRESC
     pst_canReg->u32_reg6 &= (~0xFF);    
-    
-    /**
-     *  32* (presec + 1) / 128 *10^6 = 1/baud
-     *  4 * 10^6 = （(presec + 1)）　×　baud
-    */
 
     // need check, now is not correct
     switch(priv->baud)
     {
         case CAN_BAUDR_125K:
         { 
-            pst_canReg->u32_reg6 |= 0x1F;          // S_PRESC = 31 
+            pst_canReg->u32_reg6 |= 0x1F;     
             break;
         }
         case CAN_BAUDR_250K:
         {
-            pst_canReg->u32_reg6 |= 0xF;          // S_PRESC = 15 
+            pst_canReg->u32_reg6 |= 0xF;
             break;
         }
         case CAN_BAUDR_500K:
         {
-            pst_canReg->u32_reg6 |= 0x7;          // S_PRESC = 7 
+            pst_canReg->u32_reg6 |= 0x7; 
             break;
         }
         case CAN_BAUDR_1M:
         {
-            pst_canReg->u32_reg6 |= 0x3;          // S_PRESC = 3 
+            pst_canReg->u32_reg6 |= 0x3;
             break;
         }
         default:
         {
-            pst_canReg->u32_reg6 |= 0x7;          // S_PRESC = 7 
+            pst_canReg->u32_reg6 |= 0x7;
             canerr("baud rate error,set default baud rate 500K.\n");
             break;
         }
     }
 
-    // ACFCTRL-->SELMASK=0, register ACF_x point to acceptance code
+    pst_canReg->u32_reg8 &= ~(0x0F); 
     pst_canReg->u32_reg8 &= ~(1<<5); 
+    pst_canReg->u32_reg9 &= ~(CAN_AMASK_ID10_0); 
+    pst_canReg->u32_reg9 |= (0x01 & CAN_AMASK_ID10_0);
+    pst_canReg->u32_reg8 |= (1<<5);
 
-    // just definie STD
-
-    // if(CAN_FORMAT_STD == e_canFormat)
-    // {       
-        pst_canReg->u32_reg9 &= ~(CAN_AMASK_ID10_0);
-        // pst_canReg->u32_reg9 |= (u32_acode & CAN_AMASK_ID10_0);
-    // }   
-    // else 
-    // {       
-        // pst_canReg->u32_reg9 &= ~(CAN_AMASK_ID28_0);
-        // pst_canReg->u32_reg9 |= (u32_acode & CAN_AMASK_ID28_0);
-    // }  
-
-
-    // ACFCTRL-->SELMASK=1, register ACF_x point to acceptance mask
-    pst_canReg->u32_reg8 |=(1<<5 | 0x1<<16); 
-
-    // if(CAN_FORMAT_STD == e_canFormat)
-    // {   
-        pst_canReg->u32_reg9 &= ~(CAN_AMASK_ID10_0);  
-        // pst_canReg->u32_reg9 |= (u32_amask & CAN_AMASK_ID10_0);
-    // }
-    // else
-    // {   
-        // pst_canReg->u32_reg9 &= ~(CAN_AMASK_ID28_0);    
-        // pst_canReg->u32_reg9 |= (u32_amask & CAN_AMASK_ID28_0);
-    // }
-    
-    //clear ACF_3 AIDEE,acceptance filter accepts both standard or extended frames
+    pst_canReg->u32_reg8 |= (1<<16);
+    pst_canReg->u32_reg9 &= ~(CAN_AMASK_ID10_0);     
+    pst_canReg->u32_reg9 |= (0x01 & CAN_AMASK_ID10_0);
     pst_canReg->u32_reg9 &= ~(1 << 30); 
-    
-    pst_canReg->u32_reg4 &= ~(0xFE);//clear RTIE register
-    // pst_canReg->u32_reg4 |= (u8_rtie & 0xFE);
-    
-    pst_canReg->u32_reg3 &= ~(1<<7);    // CFG_STAT-->RESET=0
 
+    pst_canReg->u32_reg3 &= ~(1<<7);
 
     return OK;
 }

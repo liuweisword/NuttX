@@ -205,53 +205,6 @@ static struct can_dev_s g_can1dev =
 };
 #endif
 
-
-/****************************************************************************
- * Private Functions
- ****************************************************************************/
-
-// static uint32_t arcan_getreg(FAR struct ar_can_s *priv, int offset)
-// {
-//   return getreg32(priv->base + offset);
-// }
-
-// static uint32_t arcan_getfreg(FAR struct ar_can_s *priv, int offset)
-// {
-//   return getreg32(priv->fbase + offset);
-// }
-
-
-/****************************************************************************
- * Name: arcan_putreg
- * Name: arcan_putfreg
- *
- * Description:
- *   Set the value of a CAN register or filter block register.
- *
- * Input Parameters:
- *   priv - A reference to the CAN block status
- *   offset - The offset to the register to write
- *   value - The value to write to the register
- *
- * Returned Value:
- *   None
- *
- ****************************************************************************/
-
-// static void arcan_putreg(FAR struct ar_can_s *priv, int offset,
-//                             uint32_t value)
-// {
-//   putreg32(value, priv->base + offset);
-// }
-
-// static void arcan_putfreg(FAR struct ar_can_s *priv, int offset,
-//                              uint32_t value)
-// {
-//   putreg32(value, priv->fbase + offset);
-// }
-
-
-
 /****************************************************************************
  * Name: arcan_reset
  *
@@ -394,7 +347,7 @@ static void arcan_rxint(FAR struct can_dev_s *dev, bool enable)
     pst_canReg->u32_reg4 &= ~(0xF0); // clear RIE / ROIE / RFIE / RAFIE    
   }
 
-  caninfo("arcan_rxint CAN%d enable: 0x%02x\n", priv->port, pst_canReg->u32_reg4);
+  caninfo("arcan_rxint CAN%d u32_reg4: 0x%02x\n", priv->port, pst_canReg->u32_reg4);
 }
 
 /****************************************************************************
@@ -413,20 +366,21 @@ static void arcan_rxint(FAR struct can_dev_s *dev, bool enable)
 
 static void arcan_txint(FAR struct can_dev_s *dev, bool enable)
 {
-  FAR struct ar_can_s *priv = dev->cd_priv;
-  // uint32_t regval;
+  FAR struct ar_can_s *priv = (struct ar_can_s *)dev->cd_priv;
+
+  volatile STRU_CAN_TYPE *pst_canReg = (STRU_CAN_TYPE *)priv->base;
 
   caninfo("arcan_txint CAN%d enable: %d\n", priv->port, enable);
 
   /* Support only disabling the transmit mailbox interrupt */
-
-  if (!enable)
-    {
-// TODO        
-//       regval  = stm32can_getreg(priv, STM32_CAN_IER_OFFSET);
-//       regval &= ~CAN_IER_TMEIE;
-//       stm32can_putreg(priv, STM32_CAN_IER_OFFSET, regval);
-    }
+  if (enable)
+  {
+    pst_canReg->u32_reg4 |= (0x0E); // set TPIE / TSIE / EIE
+  }
+  else
+  {
+    pst_canReg->u32_reg4 &= ~(0x0E); // clear TPIE / TSIE / EIE
+  }
 }
 
 /****************************************************************************
@@ -442,329 +396,12 @@ static void arcan_txint(FAR struct can_dev_s *dev, bool enable)
  *   Zero on success; a negated errno on failure
  *
  ****************************************************************************/
-// /*
-// static int arcan_ioctl(FAR struct can_dev_s *dev, int cmd,
-//                           unsigned long arg)
-// {
-//   FAR struct ar_can_s *priv;
-//   int ret = -ENOTTY;
-// 
-//   caninfo("cmd=%04x arg=%lu\n", cmd, arg);
-// 
-//   DEBUGASSERT(dev && dev->cd_priv);
-//   priv = dev->cd_priv;
-// 
-//   /* Handle the command */
-// 
-//   switch (cmd)
-//     {
-//       /* CANIOC_GET_BITTIMING:
-//        *   Description:    Return the current bit timing settings
-//        *   Argument:       A pointer to a write-able instance of struct
-//        *                   canioc_bittiming_s in which current bit timing
-//        *                   values will be returned.
-//        *   Returned Value: Zero (OK) is returned on success.  Otherwise -1
-//        *                   (ERROR) is returned with the errno variable set
-//        *                   to indicate the nature of the error.
-//        *   Dependencies:   None
-//        */
-// 
-//       case CANIOC_GET_BITTIMING:
-//         {
-//           FAR struct canioc_bittiming_s *bt =
-//             (FAR struct canioc_bittiming_s *)arg;
-//           uint32_t regval;
-//           uint32_t brp;
-// 
-//           DEBUGASSERT(bt != NULL);
-//           regval       = stm32can_getreg(priv, STM32_CAN_BTR_OFFSET);
-//           bt->bt_sjw   = ((regval & CAN_BTR_SJW_MASK) >> CAN_BTR_SJW_SHIFT) + 1;
-//           bt->bt_tseg1 = ((regval & CAN_BTR_TS1_MASK) >> CAN_BTR_TS1_SHIFT) + 1;
-//           bt->bt_tseg2 = ((regval & CAN_BTR_TS2_MASK) >> CAN_BTR_TS2_SHIFT) + 1;
-// 
-//           brp          = ((regval & CAN_BTR_BRP_MASK) >> CAN_BTR_BRP_SHIFT) + 1;
-//           bt->bt_baud  = STM32_PCLK1_FREQUENCY /
-//                          (brp * (bt->bt_tseg1 + bt->bt_tseg2 + 1));
-//           ret = OK;
-//         }
-//         break;
-// 
-//       /* CANIOC_SET_BITTIMING:
-//        *   Description:    Set new current bit timing values
-//        *   Argument:       A pointer to a read-able instance of struct
-//        *                   canioc_bittiming_s in which the new bit timing
-//        *                   values are provided.
-//        *   Returned Value: Zero (OK) is returned on success.  Otherwise -1
-//        *                   (ERROR)is returned with the errno variable set
-//        *                    to indicate thenature of the error.
-//        *   Dependencies:   None
-//        *
-//        * REVISIT: There is probably a limitation here:  If there are multiple
-//        * threads trying to send CAN packets, when one of these threads
-//        * reconfigures the bitrate, the MCAN hardware will be reset and the
-//        * context of operation will be lost.  Hence, this IOCTL can only safely
-//        * be executed in quiescent time periods.
-//        */
-// 
-//       case CANIOC_SET_BITTIMING:
-//         {
-//           FAR const struct canioc_bittiming_s *bt =
-//             (FAR const struct canioc_bittiming_s *)arg;
-//           uint32_t brp;
-//           uint32_t can_bit_quanta;
-//           uint32_t tmp;
-//           uint32_t regval;
-// 
-//           DEBUGASSERT(bt != NULL);
-//           DEBUGASSERT(bt->bt_baud < STM32_PCLK1_FREQUENCY);
-//           DEBUGASSERT(bt->bt_sjw > 0 && bt->bt_sjw <= 4);
-//           DEBUGASSERT(bt->bt_tseg1 > 0 && bt->bt_tseg1 <= 16);
-//           DEBUGASSERT(bt->bt_tseg2 > 0 && bt->bt_tseg2 <=  8);
-// 
-//           regval = stm32can_getreg(priv, STM32_CAN_BTR_OFFSET);
-// 
-//           /* Extract bit timing data */
-//           /* tmp is in clocks per bit time */
-// 
-//           tmp = STM32_PCLK1_FREQUENCY / bt->bt_baud;
-// 
-//           /* This value is dynamic as requested by user */
-// 
-//           can_bit_quanta = bt->bt_tseg1 + bt->bt_tseg2 + 1;
-// 
-//           if (tmp < can_bit_quanta)
-//             {
-//               /* This timing is not possible */
-// 
-//               ret = -EINVAL;
-//               break;
-//             }
-// 
-//           /* Otherwise, nquanta is can_bit_quanta, ts1 and ts2 are
-//            * provided by the user and we calculate brp to achieve
-//            * can_bit_quanta quanta in the bit times
-//            */
-// 
-//           else
-//             {
-//               brp = (tmp + (can_bit_quanta/2)) / can_bit_quanta;
-//               DEBUGASSERT(brp >= 1 && brp <= CAN_BTR_BRP_MAX);
-//             }
-// 
-//           caninfo("TS1: %d TS2: %d BRP: %d\n",
-//                   bt->bt_tseg1, bt->bt_tseg2, brp);
-// 
-//           /* Configure bit timing. */
-// 
-//           regval &= ~(CAN_BTR_BRP_MASK | CAN_BTR_TS1_MASK |
-//                       CAN_BTR_TS2_MASK | CAN_BTR_SJW_MASK);
-//           regval |= ((brp          - 1) << CAN_BTR_BRP_SHIFT) |
-//                     ((bt->bt_tseg1 - 1) << CAN_BTR_TS1_SHIFT) |
-//                     ((bt->bt_tseg2 - 1) << CAN_BTR_TS2_SHIFT) |
-//                     ((bt->bt_sjw   - 1) << CAN_BTR_SJW_SHIFT);
-// 
-//           /* Bit timing can only be configured in init mode. */
-// 
-//           ret = stm32can_enterinitmode(priv);
-//           if (ret < 0)
-//             {
-//               break;
-//             }
-// 
-//           stm32can_putreg(priv, STM32_CAN_BTR_OFFSET, regval);
-// 
-//           ret = stm32can_exitinitmode(priv);
-//           if (ret >= 0)
-//             {
-//               priv->baud  = STM32_PCLK1_FREQUENCY /
-//                 (brp * (bt->bt_tseg1 + bt->bt_tseg2 + 1));
-//             }
-//         }
-//         break;
-// 
-//       /* CANIOC_GET_CONNMODES:
-//        *   Description:    Get the current bus connection modes
-//        *   Argument:       A pointer to a write-able instance of struct
-//        *                   canioc_connmodes_s in which the new bus modes will
-//        *                   be returned.
-//        *   Returned Value: Zero (OK) is returned on success.  Otherwise -1
-//        *                   (ERROR)is returned with the errno variable set
-//        *                   to indicate the nature of the error.
-//        *   Dependencies:   None
-//        */
-// 
-//       case CANIOC_GET_CONNMODES:
-//         {
-//           FAR struct canioc_connmodes_s *bm =
-//             (FAR struct canioc_connmodes_s *)arg;
-//           uint32_t regval;
-// 
-//           DEBUGASSERT(bm != NULL);
-// 
-//           regval          = stm32can_getreg(priv, STM32_CAN_BTR_OFFSET);
-// 
-//           bm->bm_loopback = ((regval & CAN_BTR_LBKM) == CAN_BTR_LBKM);
-//           bm->bm_silent   = ((regval & CAN_BTR_SILM) == CAN_BTR_SILM);
-//           ret = OK;
-//           break;
-//         }
-// 
-//       /* CANIOC_SET_CONNMODES:
-//        *   Description:    Set new bus connection modes values
-//        *   Argument:       A pointer to a read-able instance of struct
-//        *                   canioc_connmodes_s in which the new bus modes
-//        *                   are provided.
-//        *   Returned Value: Zero (OK) is returned on success.  Otherwise -1
-//        *                   (ERROR) is returned with the errno variable set
-//        *                   to indicate the nature of the error.
-//        *   Dependencies:   None
-//        */
-// 
-//       case CANIOC_SET_CONNMODES:
-//         {
-//           FAR struct canioc_connmodes_s *bm =
-//             (FAR struct canioc_connmodes_s *)arg;
-//           uint32_t regval;
-// 
-//           DEBUGASSERT(bm != NULL);
-// 
-//           regval = stm32can_getreg(priv, STM32_CAN_BTR_OFFSET);
-// 
-//           if (bm->bm_loopback)
-//             {
-//               regval |= CAN_BTR_LBKM;
-//             }
-//           else
-//             {
-//               regval &= ~CAN_BTR_LBKM;
-//             }
-// 
-//           if (bm->bm_silent)
-//             {
-//               regval |= CAN_BTR_SILM;
-//             }
-//           else
-//             {
-//               regval &= ~CAN_BTR_SILM;
-//             }
-// 
-//           /* This register can only be configured in init mode. */
-// 
-//           ret = stm32can_enterinitmode(priv);
-//           if (ret < 0)
-//             {
-//               break;
-//             }
-// 
-//           stm32can_putreg(priv, STM32_CAN_BTR_OFFSET, regval);
-// 
-//           ret = stm32can_exitinitmode(priv);
-//         }
-//         break;
-// 
-// #ifdef CONFIG_CAN_EXTID
-//       /* CANIOC_ADD_EXTFILTER:
-//        *   Description:    Add an address filter for a extended 29 bit
-//        *                   address.
-//        *   Argument:       A reference to struct canioc_extfilter_s
-//        *   Returned Value: A non-negative filter ID is returned on success.
-//        *                   Otherwise -1 (ERROR) is returned with the errno
-//        *                   variable set to indicate the nature of the error.
-//        */
-// 
-//       case CANIOC_ADD_EXTFILTER:
-//         {
-//           DEBUGASSERT(arg != 0);
-//           ret = stm32can_addextfilter(priv,
-//                                       (FAR struct canioc_extfilter_s *)arg);
-//         }
-//         break;
-// 
-//       /* CANIOC_DEL_EXTFILTER:
-//        *   Description:    Remove an address filter for a standard 29 bit
-//        *                   address.
-//        *   Argument:       The filter index previously returned by the
-//        *                   CANIOC_ADD_EXTFILTER command
-//        *   Returned Value: Zero (OK) is returned on success.  Otherwise -1
-//        *                   (ERROR)is returned with the errno variable set
-//        *                   to indicate the nature of the error.
-//        */
-// 
-//       case CANIOC_DEL_EXTFILTER:
-//         {
-// #if 0 /* Unimplemented */
-//           DEBUGASSERT(arg <= priv->config->nextfilters);
-// #endif
-//           ret = stm32can_delextfilter(priv, (int)arg);
-//         }
-//         break;
-// #endif
-// 
-//       /* CANIOC_ADD_STDFILTER:
-//        *   Description:    Add an address filter for a standard 11 bit
-//        *                   address.
-//        *   Argument:       A reference to struct canioc_stdfilter_s
-//        *   Returned Value: A non-negative filter ID is returned on success.
-//        *                   Otherwise -1 (ERROR) is returned with the errno
-//        *                   variable set to indicate the nature of the error.
-//        */
-// 
-//       case CANIOC_ADD_STDFILTER:
-//         {
-//           DEBUGASSERT(arg != 0);
-//           ret = stm32can_addstdfilter(priv,
-//                                       (FAR struct canioc_stdfilter_s *)arg);
-//         }
-//         break;
-// 
-//       /* CANIOC_DEL_STDFILTER:
-//        *   Description:    Remove an address filter for a standard 11 bit
-//        *                   address.
-//        *   Argument:       The filter index previously returned by the
-//        *                   CANIOC_ADD_STDFILTER command
-//        *   Returned Value: Zero (OK) is returned on success.  Otherwise -1
-//        *                   (ERROR) is returned with the errno variable set
-//        *                   to indicate the nature of the error.
-//        */
-// 
-//       case CANIOC_DEL_STDFILTER:
-//         {
-// #if 0 /* Unimplemented */
-//           DEBUGASSERT(arg <= priv->config->nstdfilters);
-// #endif
-//           ret = stm32can_delstdfilter(priv, (int)arg);
-//         }
-//         break;
-// 
-//       /* Unsupported/unrecognized command */
-// 
-//       default:
-//         canerr("ERROR: Unrecognized command: %04x\n", cmd);
-//         break;
-//     }
-// 
-//   return ret;
-// }*/
-// /*
 static int arcan_ioctl(FAR struct can_dev_s *dev, int cmd,
                           unsigned long arg)
 {
-    caninfo("arcan_ioctl can data erase \n");
+  caninfo("arcan_ioctl can data erase \n");
 
-  
-  // FAR struct ar_can_s *priv;
-  int ret = -ENOTTY;
-
-  // caninfo("cmd=%04x arg=%lu\n", cmd, arg);
-
-  // DEBUGASSERT(dev && dev->cd_priv);
-  // priv = dev->cd_priv;
-
-  // /* Handle the command */
-
-  // // TODO
-
-  return ret;
+  return -ENOTTY;
 }
 
 /****************************************************************************
@@ -813,7 +450,36 @@ static int arcan_remoterequest(FAR struct can_dev_s *dev, uint16_t id)
 static int arcan_send(FAR struct can_dev_s *dev,
                          FAR struct can_msg_s *msg)
 {
-    return OK;
+    FAR struct ar_can_s *priv = (struct ar_can_s *)dev->cd_priv;
+
+    volatile STRU_CAN_TYPE *pst_canReg = (STRU_CAN_TYPE *)priv->base;
+
+    //EDL=0 CAN2.0 frame
+    pst_canReg->u32_txBuf[1] &= (~CAN_TBUF_EDL);
+    
+    //IDE=0 standard u8_format
+    pst_canReg->u32_txBuf[1] &= (~CAN_TBUF_IDE);
+
+    // clear ID[10:0]
+    pst_canReg->u32_txBuf[0] &= (~CAN_AMASK_ID10_0); 
+    // set ID[10:0]
+    pst_canReg->u32_txBuf[0] |= (msg->cm_hdr.ch_id & CAN_AMASK_ID10_0);
+    
+    // clear DLC, the number of payload bytes in a frame, valid max=8 for CAN2.0
+    pst_canReg->u32_txBuf[1] &= (~CAN_FRAME_LEN_AMASK); 
+
+    pst_canReg->u32_txBuf[1] |= msg->cm_hdr.ch_dlc;
+
+    //RTR=0,data frame
+    pst_canReg->u32_txBuf[1] &= (~CAN_TBUF_RTR);
+
+    for(uint8_t u8_i=0; u8_i<(msg->cm_hdr.ch_dlc+3)/4; u8_i++)
+    {
+        pst_canReg->u32_txBuf[2+u8_i] =*(uint32_t*)(msg->cm_data+u8_i*4);
+    }
+    pst_canReg->u32_reg3 |= (1<<12);    // TCMD-->TPE = 1,Transmit Primary Enable
+    caninfo("arcan_send \n");
+    return true;
 }
 
 /****************************************************************************
@@ -832,7 +498,9 @@ static int arcan_send(FAR struct can_dev_s *dev,
 
 static bool arcan_txready(FAR struct can_dev_s *dev)
 {
-    return OK;
+    caninfo("arcan_txready \n");
+
+    return true;
 }
 
 /****************************************************************************
@@ -855,7 +523,13 @@ static bool arcan_txready(FAR struct can_dev_s *dev)
 
 static bool arcan_txempty(FAR struct can_dev_s *dev)
 {
-    return OK;
+    caninfo("arcan_txempty \n");
+
+    FAR struct ar_can_s *priv = (struct ar_can_s *)(dev->cd_priv);
+
+    volatile STRU_CAN_TYPE *pst_canReg = (STRU_CAN_TYPE *)priv->base;
+    
+    return (pst_canReg->u32_reg3 & CFG_STAT_TACTIVE) == 0;
 }
 
 /****************************************************************************
@@ -879,7 +553,7 @@ static int arcan_interrupt(int irq, FAR void *context, FAR void *arg)
   
   struct can_hdr_s hdr = {0};
 
-  uint32_t buffer[4] = {0};
+  uint8_t buffer[8] = {0};
 
   FAR struct ar_can_s *priv = (struct ar_can_s *)(dev->cd_priv);
 
@@ -918,20 +592,18 @@ static int arcan_interrupt(int irq, FAR void *context, FAR void *arg)
 
       for (size_t i = 0; i < hdr.ch_dlc / 4; i += 4)
       {
-          buffer[i] = pst_canReg->u32_rxBuf[2+i];
+          buffer[i] = pst_canReg->u32_rxBuf[i];
       }
 
-      
-
-      can_receive(dev, &hdr, (uint8_t *)buffer[0]);
+      can_receive(dev, &hdr, (uint8_t *)&buffer[0]);
       // release 
       pst_canReg->u32_reg3 |= (1<<28);
-
-
   }
   else if ((pst_canReg->u32_reg4 & 0x0c00) != 0) 
   {
     pst_canReg->u32_reg4 |=0x0c000;
+    canerr("u32_reg4: 0x%x \n", pst_canReg->u32_reg4);
+
   }
   else 
   {
@@ -940,9 +612,6 @@ static int arcan_interrupt(int irq, FAR void *context, FAR void *arg)
 
   return OK;
 }
-
-
-
 
 /****************************************************************************
  * Name: arcan_bittiming
